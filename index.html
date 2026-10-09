@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#174c3c">
+<title>Coffee Shop Till</title>
+<style>
+:root{--green:#174c3c;--mint:#e7f3ec;--cream:#f7f5ef;--ink:#17231d;--muted:#68756d;--line:#dce3dd;--red:#a73535}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--cream);color:var(--ink)}
+header{position:sticky;top:0;z-index:5;background:var(--green);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{font-size:20px;margin:0}header small{opacity:.8}.tabs{display:flex;gap:6px;padding:10px;background:#fff;position:sticky;top:55px;z-index:4;border-bottom:1px solid var(--line)}
+button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:11px 13px;font-weight:650}
+.tab{background:#edf1ed;color:var(--ink);flex:1}.tab.active{background:var(--green);color:#fff}
+main{padding:12px;max-width:1300px;margin:auto}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.85fr);gap:14px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;min-width:0}.toolbar{display:flex;gap:8px;margin-bottom:12px}.toolbar input{min-width:0;flex:1}
+input,select{border:1px solid var(--line);border-radius:10px;padding:11px;background:#fff;color:var(--ink);width:100%}
+.categories{display:flex;gap:7px;overflow:auto;padding-bottom:12px}.cat{white-space:nowrap;background:#eef2ee}.cat.active{background:var(--mint);outline:2px solid #7eb69a}
+.products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.product{background:#fbfcfa;border:1px solid var(--line);text-align:left;min-height:86px;display:flex;flex-direction:column;justify-content:space-between;gap:9px;padding:12px}
+.product:active{transform:scale(.98)}.pname{font-size:15px;line-height:1.2}.price{color:var(--green);font-size:16px}
+h2{font-size:18px;margin:0 0 12px}.muted{color:var(--muted);font-size:13px}.cartline{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px 0;border-bottom:1px solid var(--line)}
+.qty{display:flex;align-items:center;gap:7px}.qty button{padding:5px 10px;background:#edf1ed}.totalrow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;font-size:22px;font-weight:800}
+.primary{background:var(--green);color:#fff}.secondary{background:#edf1ed;color:var(--ink)}.danger{background:#f9e9e9;color:var(--red)}.payrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{width:100%}
+.hidden{display:none!important}.reportgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.metric{background:#f7faf7;border:1px solid var(--line);border-radius:12px;padding:14px}.metric strong{display:block;font-size:24px;margin-top:6px}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted)}
+.notice{padding:11px 12px;background:#fff7df;border:1px solid #ead89c;border-radius:10px;font-size:13px;line-height:1.4;margin-bottom:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.small{font-size:12px}.footer{padding:20px 12px;color:var(--muted);text-align:center;font-size:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.products{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs{top:52px}.reportgrid{grid-template-columns:repeat(2,minmax(0,1fr))}header h1{font-size:17px}}
+</style>
+</head>
+<body>
+<header><div><h1>☕ Coffee Shop Till</h1><small>Staff till · local prototype</small></div><div id="today" class="small"></div></header>
+<nav class="tabs"><button class="tab active" data-view="till">Till</button><button class="tab" data-view="reports">Reports</button><button class="tab" data-view="settings">Settings</button></nav>
+<main>
+<div class="notice"><strong>Important:</strong> This is a starter prototype, not a certified payment terminal. Card payments must be taken on your existing terminal and recorded here. Sales are saved in this browser on this iPad only. Export backups regularly; this version does not sync to other devices.</div>
+<section id="view-till">
+<div class="layout">
+<div class="panel">
+<div class="toolbar"><input id="search" placeholder="Search menu…" autocomplete="off"><select id="categorySelect" aria-label="Category"><option value="All">All categories</option></select></div>
+<div id="categories" class="categories"></div><div id="products" class="products"></div>
+</div>
+<div class="panel">
+<h2>Current order <span id="itemCount" class="muted"></span></h2><div id="cart"></div>
+<div class="totalrow"><span>Total</span><span id="total">£0.00</span></div>
+<div class="payrow"><button class="primary" id="cashBtn">Cash payment</button><button class="primary" id="cardBtn">Card terminal</button></div>
+<div style="height:8px"></div><button class="secondary full" id="clearBtn">Clear order</button>
+<p class="muted">For card: take payment on your separate terminal first, then tap “Card terminal” to record the sale here.</p>
+</div></div>
+</section>
+<section id="view-reports" class="hidden">
+<div class="panel">
+<h2>Sales overview</h2><div class="toolbar"><input type="date" id="reportDate"><button class="secondary" id="todayBtn">Today</button></div>
+<div class="reportgrid"><div class="metric"><span class="muted">Recorded sales</span><strong id="rSales">£0.00</strong></div><div class="metric"><span class="muted">Orders</span><strong id="rOrders">0</strong></div><div class="metric"><span class="muted">Average order</span><strong id="rAverage">£0.00</strong></div><div class="metric"><span class="muted">Cash</span><strong id="rCash">£0.00</strong></div><div class="metric"><span class="muted">Card</span><strong id="rCard">£0.00</strong></div><div class="metric"><span class="muted">Top item</span><strong id="rTop" style="font-size:17px">—</strong></div></div>
+<h2 style="margin-top:22px">Product sales</h2><div class="scroll"><table><thead><tr><th>Product</th><th>Qty</th><th>Sales</th></tr></thead><tbody id="productReport"></tbody></table></div>
+<h2 style="margin-top:22px">Orders</h2><div class="scroll"><table><thead><tr><th>Time</th><th>Payment</th><th>Items</th><th>Total</th></tr></thead><tbody id="ordersReport"></tbody></table></div>
+</div></section>
+<section id="view-settings" class="hidden">
+<div class="panel">
+<h2>Data & settings</h2>
+<p class="muted">Keep a backup at the end of every shift. The backup includes recorded sales and the menu currently loaded in this app.</p>
+<div class="actions"><button class="primary" id="exportSales">Export sales CSV</button><button class="secondary" id="backupBtn">Download backup</button><label class="secondary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Restore backup<input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></label></div>
+<h2>Menu loaded from your item export</h2><p id="menuCount" class="muted"></p><div class="scroll"><table><thead><tr><th>Category</th><th>Item</th><th>Price</th></tr></thead><tbody id="menuTable"></tbody></table></div>
+<p class="muted" style="margin-top:18px">To change product prices or add menu items in this prototype, the menu data in the app needs editing. This initial version uses your uploaded item export as its starting menu.</p>
+<button class="danger" id="clearSales">Delete all sales on this iPad</button>
+</div></section>
+</main>
+<div class="footer">Coffee Shop Till · Starter prototype · Not connected to a payment provider</div>
+<script>
+const INITIAL_PRODUCTS = [{"name": "Brownies", "variant": "Standard", "price": 3.5, "category": "Cakes", "modifiers": ""}, {"name": "Brownies", "variant": "Brownie + Ice cream", "price": 5.0, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Jam Roly Poly", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Cornflake Tart", "price": 3.0, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Treacle Sponge", "price": 3.0, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Sprinkle Cake", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Chocolate Cake", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Carrot Cake", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Jam&Coconut Cake", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Strawberry Cake", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Cakes", "variant": "Lemon Cake", "price": 2.5, "category": "Cakes", "modifiers": ""}, {"name": "Chicken Curry", "variant": "", "price": 6.5, "category": "Food", "modifiers": "Salad,Chips and Salad"}, {"name": "Chicken Nuggets (5) and Chips", "variant": "", "price": 4.5, "category": "Food", "modifiers": ""}, {"name": "Chilli Cheese Bites (5)", "variant": "", "price": 3.0, "category": "Food", "modifiers": ""}, {"name": "Chilli Con Carne", "variant": "", "price": 7.0, "category": "Food", "modifiers": "Salad,Chips and Salad"}, {"name": "Chips", "variant": "Standard", "price": 2.0, "category": "Food", "modifiers": ""}, {"name": "Chips", "variant": "Chips and Cheese", "price": 2.75, "category": "Food", "modifiers": ""}, {"name": "Churros", "variant": "4", "price": 4.5, "category": "My Shelf", "modifiers": ""}, {"name": "Churros", "variant": "8", "price": 7.5, "category": "My Shelf", "modifiers": ""}, {"name": "Churros", "variant": "12", "price": 12.0, "category": "My Shelf", "modifiers": ""}, {"name": "Churros", "variant": "Churro bites", "price": 3.0, "category": "My Shelf", "modifiers": ""}, {"name": "Coke/Diet Coke", "variant": "", "price": 1.5, "category": "Drinks", "modifiers": ""}, {"name": "Cookie Dough", "variant": "Standard", "price": 5.5, "category": "My Shelf", "modifiers": "Ice Cream"}, {"name": "Cookie Dough", "variant": "Kids Cookie Dough", "price": 2.5, "category": "My Shelf", "modifiers": "Ice Cream"}, {"name": "Crepe", "variant": "", "price": 5.0, "category": "My Shelf", "modifiers": ""}, {"name": "Custard", "variant": "", "price": 1.0, "category": "Cakes", "modifiers": ""}, {"name": "Doughnuts", "variant": "1", "price": 1.5, "category": "My Shelf", "modifiers": ""}, {"name": "Doughnuts", "variant": "4", "price": 6.0, "category": "My Shelf", "modifiers": ""}, {"name": "Doughnuts", "variant": "8", "price": 10.0, "category": "My Shelf", "modifiers": ""}, {"name": "Fanta", "variant": "", "price": 1.5, "category": "Drinks", "modifiers": ""}, {"name": "Hot Chocolate", "variant": "On it's own", "price": 1.5, "category": "Drinks", "modifiers": ""}, {"name": "Hot Chocolate", "variant": "Hot Chocolate + Cream and Marshmallow", "price": 2.0, "category": "Drinks", "modifiers": ""}, {"name": "Jacket Potato", "variant": "", "price": 4.5, "category": "Food", "modifiers": "Salad"}, {"name": "Lasagna", "variant": "", "price": 7.5, "category": "Food", "modifiers": "Salad,Chips and Salad"}, {"name": "Mac and Cheese", "variant": "", "price": 2.5, "category": "Food", "modifiers": ""}, {"name": "Marshmallow Sticks", "variant": "", "price": 1.5, "category": "Cakes", "modifiers": ""}, {"name": "Milkshake", "variant": "", "price": 5.0, "category": "My Shelf", "modifiers": ""}, {"name": "Panini", "variant": "", "price": 3.75, "category": "Food", "modifiers": "Extra Filling,Salad,Chips and Salad"}, {"name": "Sandwich", "variant": "", "price": 3.75, "category": "Food", "modifiers": "Salad,Cheese,Chips and Salad"}, {"name": "Slushie", "variant": "", "price": 1.0, "category": "Drinks", "modifiers": ""}, {"name": "Toastie", "variant": "", "price": 3.75, "category": "Food", "modifiers": "Salad,Chips and Salad"}, {"name": "Waffle", "variant": "Full", "price": 6.5, "category": "My Shelf", "modifiers": ""}, {"name": "Waffle", "variant": "1/2", "price": 4.5, "category": "My Shelf", "modifiers": ""}, {"name": "Water", "variant": "", "price": 1.5, "category": "Drinks", "modifiers": ""}];
+const STORE_KEY = "coffeeShopTill.sales.v1";
+const MENU_KEY = "coffeeShopTill.menu.v1";
+let products = loadMenu();
+let sales = loadSales();
+let cart = [];
+let activeCategory = "All";
+const money = n => new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(n)||0);
+const todayISO = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+function loadSales(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"[]")}catch{return []}}
+function saveSales(){localStorage.setItem(STORE_KEY,JSON.stringify(sales))}
+function loadMenu(){try{return JSON.parse(localStorage.getItem(MENU_KEY)||"null")||INITIAL_PRODUCTS}catch{return INITIAL_PRODUCTS}}
+function saveMenu(){localStorage.setItem(MENU_KEY,JSON.stringify(products))}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function label(p){return p.variant && p.variant!=="Standard" ? `${p.name} — ${p.variant}` : p.name}
+function init(){
+ document.getElementById("today").textContent=new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+ document.getElementById("reportDate").value=todayISO();
+ const cats=[...new Set(products.map(p=>p.category||"Other"))].sort();
+ document.getElementById("categorySelect").innerHTML='<option value="All">All categories</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");
+ renderCategories();renderProducts();renderCart();renderMenuTable();renderReports();
+ document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
+ document.getElementById("search").addEventListener("input",renderProducts);
+ document.getElementById("categorySelect").addEventListener("change",e=>{activeCategory=e.target.value;renderCategories();renderProducts()});
+ document.getElementById("cashBtn").onclick=()=>checkout("Cash");
+ document.getElementById("cardBtn").onclick=()=>checkout("Card");
+ document.getElementById("clearBtn").onclick=()=>{if(cart.length && confirm("Clear this order?")){cart=[];renderCart()}};
+ document.getElementById("reportDate").onchange=renderReports;
+ document.getElementById("todayBtn").onclick=()=>{document.getElementById("reportDate").value=todayISO();renderReports()};
+ document.getElementById("exportSales").onclick=exportCSV;
+ document.getElementById("backupBtn").onclick=backup;
+ document.getElementById("restoreFile").onchange=restore;
+ document.getElementById("clearSales").onclick=()=>{if(confirm("Permanently delete all sales saved in this browser? Download a backup first if needed.")){sales=[];saveSales();renderReports();alert("Sales cleared.")}};
+}
+function switchView(v){document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));document.getElementById("view-"+v).classList.remove("hidden");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===v));if(v==="reports")renderReports()}
+function renderCategories(){const cats=["All",...[...new Set(products.map(p=>p.category||"Other"))].sort()];document.getElementById("categories").innerHTML=cats.map(c=>`<button class="cat ${activeCategory===c?"active":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{activeCategory=b.dataset.cat;document.getElementById("categorySelect").value=activeCategory;renderCategories();renderProducts()})}
+function renderProducts(){const q=document.getElementById("search").value.toLowerCase();const list=products.filter(p=>(activeCategory==="All"||p.category===activeCategory)&&label(p).toLowerCase().includes(q));document.getElementById("products").innerHTML=list.map((p,i)=>`<button class="product" data-product="${products.indexOf(p)}"><span class="pname">${esc(label(p))}</span><strong class="price">${money(p.price)}</strong></button>`).join("")||'<p class="muted">No matching products.</p>';document.querySelectorAll("[data-product]").forEach(b=>b.onclick=()=>addToCart(products[Number(b.dataset.product)]))}
+function addToCart(p){const existing=cart.find(x=>x.name===p.name&&x.variant===p.variant&&x.price===p.price);if(existing)existing.qty++;else cart.push({...p,qty:1});renderCart()}
+function renderCart(){document.getElementById("cart").innerHTML=cart.map((p,i)=>`<div class="cartline"><div><strong>${esc(label(p))}</strong><div class="muted">${money(p.price)} each</div></div><div style="text-align:right"><strong>${money(p.price*p.qty)}</strong><div class="qty"><button data-minus="${i}">−</button><span>${p.qty}</span><button data-plus="${i}">+</button></div></div></div>`).join("")||'<p class="muted">Tap a menu item to add it to the order.</p>';document.querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>{const i=+b.dataset.minus;cart[i].qty--;if(cart[i].qty<=0)cart.splice(i,1);renderCart()});document.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{cart[+b.dataset.plus].qty++;renderCart()});document.getElementById("total").textContent=money(cart.reduce((s,p)=>s+p.price*p.qty,0));document.getElementById("itemCount").textContent=cart.reduce((s,p)=>s+p.qty,0)?`(${cart.reduce((s,p)=>s+p.qty,0)} items)`:""}
+function checkout(method){if(!cart.length){alert("Add an item first.");return}const total=Number(cart.reduce((s,p)=>s+p.price*p.qty,0).toFixed(2));if(!confirm(`Record ${money(total)} as ${method.toLowerCase()} payment?${method==="Card"?" Confirm the card payment has already been approved on your separate terminal.":""}`))return;const now=new Date();sales.push({id:now.getTime()+"-"+Math.random().toString(36).slice(2,7),timestamp:now.toISOString(),date:todayISO(),payment:method,total,items:cart.map(p=>({name:p.name,variant:p.variant,category:p.category,price:p.price,qty:p.qty,lineTotal:Number((p.price*p.qty).toFixed(2))}))});saveSales();cart=[];renderCart();renderReports();alert("Sale recorded. Remember to reconcile totals against your card terminal and cash at closing.")}
+function renderReports(){const date=document.getElementById("reportDate").value||todayISO();const orders=sales.filter(s=>s.date===date);const total=orders.reduce((n,s)=>n+s.total,0);const cash=orders.filter(s=>s.payment==="Cash").reduce((n,s)=>n+s.total,0);const card=orders.filter(s=>s.payment==="Card").reduce((n,s)=>n+s.total,0);document.getElementById("rSales").textContent=money(total);document.getElementById("rOrders").textContent=orders.length;document.getElementById("rAverage").textContent=money(orders.length?total/orders.length:0);document.getElementById("rCash").textContent=money(cash);document.getElementById("rCard").textContent=money(card);const agg={};orders.forEach(s=>s.items.forEach(i=>{const k=label(i);if(!agg[k])agg[k]={qty:0,sales:0};agg[k].qty+=i.qty;agg[k].sales+=i.lineTotal}));const sorted=Object.entries(agg).sort((a,b)=>b[1].qty-a[1].qty);document.getElementById("rTop").textContent=sorted[0]?.[0]||"—";document.getElementById("productReport").innerHTML=sorted.map(([n,v])=>`<tr><td>${esc(n)}</td><td>${v.qty}</td><td>${money(v.sales)}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">No sales for this date.</td></tr>';document.getElementById("ordersReport").innerHTML=orders.slice().reverse().map(s=>`<tr><td>${new Date(s.timestamp).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</td><td>${esc(s.payment)}</td><td>${s.items.reduce((a,i)=>a+i.qty,0)}</td><td>${money(s.total)}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">No orders for this date.</td></tr>'}
+function renderMenuTable(){document.getElementById("menuCount").textContent=`${products.length} sellable menu options loaded from your uploaded item export.`;document.getElementById("menuTable").innerHTML=products.map(p=>`<tr><td>${esc(p.category||"Other")}</td><td>${esc(label(p))}</td><td>${money(p.price)}</td></tr>`).join("")}
+function download(filename,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function csvCell(v){return '"'+String(v??"").replace(/"/g,'""')+'"'}
+function exportCSV(){const rows=[["Order ID","Timestamp","Date","Payment","Item","Variant","Category","Qty","Unit price","Line total","Order total"]];sales.forEach(s=>s.items.forEach(i=>rows.push([s.id,s.timestamp,s.date,s.payment,i.name,i.variant,i.category,i.qty,i.price,i.lineTotal,s.total])));download("coffee-shop-sales.csv",rows.map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv;charset=utf-8")}
+function backup(){download("coffee-shop-backup-"+todayISO()+".json",JSON.stringify({version:1,products,sales},null,2),"application/json")}
+function restore(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!Array.isArray(data.sales)||!Array.isArray(data.products))throw new Error("Invalid backup");if(!confirm("Restore this backup? It will replace the menu and sales currently stored in this browser."))return;products=data.products;sales=data.sales;saveMenu();saveSales();location.reload()}catch(err){alert("Could not restore that backup. Choose a backup JSON exported by this app.")}e.target.value=""};reader.readAsText(f)}
+init();
+</script>
+</body></html>
